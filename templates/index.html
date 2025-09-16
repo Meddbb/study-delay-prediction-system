@@ -1,0 +1,1504 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   Sistem Prediksi Keterlambatan Studi
+  </title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+  <style>
+   body {
+      font-family: 'Inter', sans-serif;
+    }
+   /* Toast container */
+   #toast-container {
+     position: fixed;
+     top: 1rem;
+     right: 1rem;
+     z-index: 9999;
+     display: flex;
+     flex-direction: column;
+     gap: 0.5rem;
+     max-width: 320px;
+   }
+   .toast {
+     display: flex;
+     align-items: center;
+     gap: 0.75rem;
+     padding: 0.75rem 1rem;
+     border-radius: 0.375rem;
+     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+     color: white;
+     font-weight: 600;
+     animation: slideIn 0.3s ease forwards, fadeOut 0.5s ease forwards 3.5s;
+     cursor: pointer;
+   }
+   .toast-success {
+     background-color: #16a34a;
+   }
+   .toast-error {
+     background-color: #dc2626;
+   }
+   .toast-warning {
+     background-color: #ca8a04;
+   }
+   @keyframes slideIn {
+     from {
+       opacity: 0;
+       transform: translateX(100%);
+     }
+     to {
+       opacity: 1;
+       transform: translateX(0);
+     }
+   }
+   @keyframes fadeOut {
+     to {
+       opacity: 0;
+       transform: translateX(100%);
+     }
+   }
+   /* Loading spinner */
+   .spinner {
+     border: 3px solid rgba(0,0,0,0.1);
+     border-left-color: #003366;
+     border-radius: 50%;
+     width: 24px;
+     height: 24px;
+     animation: spin 1s linear infinite;
+   }
+   @keyframes spin {
+     to { transform: rotate(360deg); }
+   }
+   /* Modal backdrop */
+   #manual-modal-backdrop {
+     background-color: rgba(0,0,0,0.5);
+   }
+  </style>
+ </head>
+ <body class="bg-gray-50 flex flex-col min-h-screen">
+  <!-- Toast container -->
+  <div aria-atomic="true" aria-live="assertive" id="toast-container">
+  </div>
+  <!-- Navbar -->
+  <nav class="bg-[#003366] text-white flex items-center justify-between px-4 sm:px-6 lg:px-8 h-14">
+   <div class="flex items-center space-x-2">
+    <div class="text-sm font-semibold leading-tight">
+     Sistem Prediksi Keterlambatan Studi
+     <div class="text-xs font-normal">
+      Politeknik Caltex Riau
+     </div>
+    </div>
+   </div>
+  </nav>
+  <!-- Main content wrapper -->
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+   <!-- Header with logo and title -->
+   <header class="text-center mb-6">
+    <h1 class="text-[#003366] font-semibold text-lg sm:text-xl md:text-2xl leading-tight">
+     Sistem Prediksi Keterlambatan Studi
+    </h1>
+    <img alt="Logo Politeknik Caltex Riau, blue and white emblem with text PCR" class="mx-auto mb-1 inline-block" height="80" src="{{ url_for('static', filename='img/Logo.png') }}" style="width: 350px; height: auto;" width="350"/>
+    <p class="text-xs sm:text-sm text-gray-600 mt-2 max-w-md mx-auto">
+     Platform prediksi yang membantu mengidentifikasi potensi keterlambatan studi mahasiswa menggunakan algoritma machine learning
+    </p>
+   </header>
+   <!-- Tabs -->
+   <div class="border-b border-gray-200 mb-4">
+    <nav aria-label="Tabs" class="-mb-px flex space-x-8 text-sm font-medium text-gray-500">
+     <button aria-current="page" class="inline-flex items-center border-b-2 border-[#003366] text-[#003366] px-1 pt-2 pb-3" id="tab-input-manual" type="button">
+      <i class="fas fa-edit mr-1">
+      </i>
+      Input Manual
+     </button>
+     <button class="inline-flex items-center border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 px-1 pt-2 pb-3" id="tab-upload-csv" type="button">
+      <i class="fas fa-file-upload mr-1">
+      </i>
+      Upload CSV
+     </button>
+     <button class="inline-flex items-center border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300 px-1 pt-2 pb-3" id="tab-dashboard" type="button">
+      <i class="fas fa-chart-bar mr-1">
+      </i>
+      Dashboard
+     </button>
+    </nav>
+   </div>
+   <!-- Input Manual Form -->
+   <section aria-labelledby="input-data-mahasiswa" class="bg-white rounded-md shadow-sm p-4 mb-6" id="input-manual-section">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4" id="input-data-mahasiswa">
+     Input Data Mahasiswa
+    </h2>
+    <form autocomplete="off" class="space-y-4 text-xs sm:text-sm" id="manual-form" novalidate="">
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+      <div>
+       <label class="block font-semibold text-gray-700 mb-1" for="semester-awal">
+        Semester Awal Prediksi
+        <span class="text-red-600">
+         *
+        </span>
+       </label>
+       <select class="w-full rounded border border-gray-300 bg-white text-gray-900 text-xs sm:text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="semester-awal" name="semester-awal" required="">
+        <option disabled="" selected="" value="">
+         Pilih Semester
+        </option>
+        <option value="3">
+         Semester 3
+        </option>
+        <option value="4">
+         Semester 4
+        </option>
+        <option value="5">
+         Semester 5
+        </option>
+        <option value="6">
+         Semester 6
+        </option>
+       </select>
+      </div>
+      <div>
+       <label class="block font-semibold text-gray-700 mb-1" for="nama-mahasiswa">
+        Nama Mahasiswa
+        <span class="text-red-600">
+         *
+        </span>
+       </label>
+       <input class="w-full rounded border border-gray-300 bg-white text-gray-900 text-xs sm:text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="nama-mahasiswa" name="nama-mahasiswa" required="" type="text"/>
+      </div>
+      <div>
+       <label class="block font-semibold text-gray-700 mb-1" for="nim">
+        NIM
+        <span class="text-red-600">
+         *
+        </span>
+       </label>
+       <input class="w-full rounded border border-gray-300 bg-white text-gray-900 text-xs sm:text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="nim" name="nim" required="" type="text"/>
+      </div>
+      <div>
+      </div>
+      <div class="sm:col-span-1">
+       <label class="block font-semibold text-gray-700 mb-1" for="total-tak">
+        Total TAK
+        <span class="text-red-600">
+         *
+        </span>
+       </label>
+       <input class="w-full rounded border border-gray-300 bg-white text-gray-900 text-xs sm:text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="total-tak" name="total-tak" required="" type="text"/>
+      </div>
+      <div class="sm:col-span-1">
+       <label class="block font-semibold text-gray-700 mb-1" for="jumlah-co">
+        Jumlah CO
+        <span class="text-red-600">
+         *
+        </span>
+       </label>
+       <input class="w-full rounded border border-gray-300 bg-white text-gray-900 text-xs sm:text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="jumlah-co" name="jumlah-co" required="" type="text"/>
+      </div>
+     </div>
+     <fieldset class="mt-4 border-t border-gray-200 pt-4">
+      <legend class="text-gray-700 font-semibold text-xs sm:text-sm mb-2">
+       Data IPK per Semester
+      </legend>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4 text-xs sm:text-sm">
+       <div data-ipk-semester="1">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-1">
+         IPK Semester 1
+         <span class="text-red-600">
+          *
+         </span>
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-1" name="ipk-semester-1" required="" type="text"/>
+       </div>
+       <div data-ipk-semester="2">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-2">
+         IPK Semester 2
+         <span class="text-red-600">
+          *
+         </span>
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-2" name="ipk-semester-2" required="" type="text"/>
+       </div>
+       <div data-ipk-semester="3">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-3">
+         IPK Semester 3
+         <span class="text-red-600">
+          *
+         </span>
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-3" name="ipk-semester-3" required="" type="text"/>
+       </div>
+       <div data-ipk-semester="4">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-4">
+         IPK Semester 4
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-4" name="ipk-semester-4" type="text"/>
+       </div>
+       <div data-ipk-semester="5">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-5">
+         IPK Semester 5
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-5" name="ipk-semester-5" type="text"/>
+       </div>
+       <div data-ipk-semester="6">
+        <label class="block font-semibold text-gray-700 mb-1" for="ipk-semester-6">
+         IPK Semester 6
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="ipk-semester-6" name="ipk-semester-6" type="text"/>
+       </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mt-4 text-xs sm:text-sm">
+       <div>
+        <label class="block font-semibold text-gray-700 mb-1" for="min-ipk">
+         Min IPK (otomatis)
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-gray-100 text-gray-900 px-2 py-1 cursor-not-allowed" disabled="" id="min-ipk" name="min-ipk" readonly="" type="text" value=""/>
+       </div>
+       <div>
+        <label class="block font-semibold text-gray-700 mb-1" for="max-ipk">
+         Max IPK (otomatis)
+        </label>
+        <input class="w-full rounded border border-gray-300 bg-gray-100 text-gray-900 px-2 py-1 cursor-not-allowed" disabled="" id="max-ipk" name="max-ipk" readonly="" type="text" value=""/>
+       </div>
+      </div>
+     </fieldset>
+     <div class="flex justify-end space-x-2 mt-4">
+      <button class="text-gray-500 text-xs sm:text-sm bg-gray-200 hover:bg-gray-300 rounded px-3 py-1 flex items-center space-x-1" id="manual-reset-btn" type="reset">
+       <i class="fas fa-undo">
+       </i>
+       <span>
+        Reset
+       </span>
+      </button>
+      <button class="text-xs sm:text-sm bg-[#003366] hover:bg-[#002244] text-white rounded px-3 py-1 flex items-center space-x-1" id="manual-predict-btn" type="submit">
+       <i class="fas fa-chart-line">
+       </i>
+       <span>
+        Prediksi
+       </span>
+       <div class="spinner hidden ml-2" id="manual-loading-spinner">
+       </div>
+      </button>
+     </div>
+    </form>
+    <!-- Manual prediction result -->
+    <div aria-live="polite" class="hidden bg-white rounded-md shadow-sm p-4 mt-6 text-xs sm:text-sm" id="manual-result-card">
+     <h2 class="font-semibold text-gray-700 mb-3">
+      Hasil Prediksi
+     </h2>
+     <div class="flex space-x-4">
+      <div class="flex-shrink-0">
+       <div class="bg-red-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
+        <i class="fas fa-graduation-cap">
+        </i>
+       </div>
+      </div>
+      <div class="flex-grow" id="manual-result-content">
+      </div>
+     </div>
+    </div>
+   </section>
+   <!-- Upload CSV Section -->
+   <section aria-labelledby="upload-csv-section" class="hidden bg-white rounded-md shadow-sm p-4 mb-6" id="upload-csv-section">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4 flex items-center justify-between" id="upload-csv-section-label">
+     Upload CSV Batch Prediksi
+     <button aria-label="Buka panduan format CSV" class="text-[#003366] hover:text-[#001f44] focus:outline-none focus:ring-2 focus:ring-[#003366] rounded px-2 py-1 flex items-center space-x-1 text-xs sm:text-sm" id="open-manual-btn">
+      <i class="fas fa-info-circle">
+      </i>
+      <span>
+       Panduan
+      </span>
+     </button>
+    </h2>
+    <div class="mb-4">
+     <label class="block mb-2 font-semibold text-gray-700 text-xs sm:text-sm" for="csv-file">
+      Pilih file CSV
+     </label>
+     <input accept=".csv" class="block w-full text-xs sm:text-sm text-gray-700 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="csv-file" type="file"/>
+    </div>
+    <div class="flex space-x-2 mb-4">
+     <button class="bg-[#003366] hover:bg-[#002244] text-white rounded px-3 py-1 text-xs sm:text-sm flex items-center space-x-1 focus:outline-none focus:ring-2 focus:ring-[#003366]" id="upload-btn" type="button">
+      <i class="fas fa-upload">
+      </i>
+      <span>
+       Upload &amp; Prediksi
+      </span>
+     </button>
+     <button class="bg-green-600 hover:bg-green-700 text-white rounded px-3 py-1 text-xs sm:text-sm flex items-center space-x-1 focus:outline-none focus:ring-2 focus:ring-green-600" id="download-template-btn" type="button">
+      <i class="fas fa-file-csv">
+      </i>
+      <span>
+       Download Template CSV
+      </span>
+     </button>
+    </div>
+    <!-- Results container -->
+    <div class="mt-6" id="batch-results-container" style="display:none;">
+     <h3 class="font-semibold text-gray-700 mb-3 text-sm">
+      Hasil Prediksi Batch CSV
+     </h3>
+     <div class="mb-3">
+      <button class="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-semibold px-3 py-1 rounded flex items-center space-x-1 focus:outline-none focus:ring-2 focus:ring-green-600" id="download-csv-btn">
+       <i class="fas fa-download">
+       </i>
+       <span>
+        Download Hasil CSV
+       </span>
+      </button>
+     </div>
+     <div class="overflow-x-auto max-h-96 border border-gray-200 rounded">
+      <table class="w-full border-collapse text-left text-gray-600 text-xs sm:text-sm" id="batch-results-table">
+       <thead>
+        <tr class="bg-gray-50 text-gray-400 uppercase font-semibold">
+         <th class="py-2 px-3 border-b border-gray-200">
+          Nama Mahasiswa
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          NIM
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          Semester Prediksi
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          Total TAK
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          Jumlah CO
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          Status
+         </th>
+         <th class="py-2 px-3 border-b border-gray-200">
+          Confidence
+         </th>
+        </tr>
+       </thead>
+       <tbody>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <!-- Dashboard Section -->
+   <section aria-labelledby="dashboard-section" class="hidden bg-white rounded-md shadow-sm p-4 mb-6" id="dashboard-section">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4" id="dashboard-section-label">
+     Dashboard Visualisasi Data
+    </h2>
+    <!-- Semester Filter -->
+    <div class="mb-6 flex flex-wrap items-center gap-4 text-xs sm:text-sm">
+     <label class="font-semibold text-gray-700" for="dashboard-semester-filter">
+      Filter Semester:
+     </label>
+     <select class="rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="dashboard-semester-filter">
+      <option selected="" value="all">
+       Semua Semester (3-6)
+      </option>
+      <option value="3">
+       Semester 3
+      </option>
+      <option value="4">
+       Semester 4
+      </option>
+      <option value="5">
+       Semester 5
+      </option>
+      <option value="6">
+       Semester 6
+      </option>
+     </select>
+    </div>
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 text-xs sm:text-sm">
+     <div class="bg-green-100 rounded p-4 flex flex-col items-center justify-center shadow">
+      <div class="text-2xl font-bold text-green-700" id="summary-total">
+       0
+      </div>
+      <div class="mt-1 font-semibold text-green-800">
+       Jumlah Mahasiswa
+      </div>
+     </div>
+     <div class="bg-green-200 rounded p-4 flex flex-col items-center justify-center shadow">
+      <div class="text-2xl font-bold text-green-800" id="summary-tepat-waktu">
+       0
+      </div>
+      <div class="mt-1 font-semibold text-green-900 flex items-center space-x-1">
+       <span>
+        🟢 Tepat Waktu
+       </span>
+      </div>
+     </div>
+     <div class="bg-red-200 rounded p-4 flex flex-col items-center justify-center shadow">
+      <div class="text-2xl font-bold text-red-700" id="summary-terlambat">
+       0
+      </div>
+      <div class="mt-1 font-semibold text-red-900 flex items-center space-x-1">
+       <span>
+        🔴 Terlambat
+       </span>
+      </div>
+     </div>
+     <div class="bg-yellow-200 rounded p-4 flex flex-col items-center justify-center shadow">
+      <div class="text-2xl font-bold text-yellow-800" id="summary-invalid-semester">
+       0
+      </div>
+      <div class="mt-1 font-semibold text-yellow-900 flex items-center space-x-1">
+       <span>
+        ⚠️ Invalid Semester
+       </span>
+      </div>
+     </div>
+     <div class="bg-blue-100 rounded p-4 flex flex-col items-center justify-center shadow">
+      <div class="text-2xl font-bold text-blue-700" id="summary-avg-confidence">
+       0.00%
+      </div>
+      <div class="mt-1 font-semibold text-blue-900">
+       Rata-rata Confidence
+      </div>
+     </div>
+    </div>
+    <!-- Visualisasi Status Prediksi -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+     <div class="bg-gray-50 p-4 rounded shadow">
+      <h3 class="text-gray-700 font-semibold mb-2 text-center">
+       Distribusi Status Prediksi (Donut Chart)
+      </h3>
+      <canvas aria-label="Donut chart showing distribution of prediction status" id="statusDonutChart" role="img">
+      </canvas>
+     </div>
+     <div class="bg-gray-50 p-4 rounded shadow">
+      <h3 class="text-gray-700 font-semibold mb-2 text-center">
+       Perbandingan Total TAK Mahasiswa
+      </h3>
+      <canvas aria-label="Bar chart comparing TAK less than 75 and TAK 75 or more" id="takCategoryChart" role="img">
+      </canvas>
+     </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+     <div class="bg-gray-50 p-4 rounded shadow">
+      <h3 class="text-gray-700 font-semibold mb-2 text-center">
+       Perbandingan Rata-rata Jumlah CO Mahasiswa
+      </h3>
+      <canvas aria-label="Histogram showing distribution of average CO counts in bins 1,2,3,4,5,>5 for Tepat Waktu and Terlambat students" id="coComparisonChart" role="img">
+      </canvas>
+     </div>
+     <div class="bg-gray-50 p-4 rounded shadow">
+      <h3 class="text-gray-700 font-semibold mb-2 text-center">
+       Distribusi IPK Terakhir Mahasiswa
+      </h3>
+      <canvas aria-label="Histogram showing distribution of last IPK between Tepat Waktu and Terlambat students" id="ipkDistributionChart" role="img">
+      </canvas>
+     </div>
+    </div>
+    <!-- Filter Status Mahasiswa -->
+    <div class="mb-4 flex items-center gap-4 text-xs sm:text-sm">
+     <label class="font-semibold text-gray-700" for="status-filter">
+      Filter Status Mahasiswa:
+     </label>
+     <select class="rounded border border-gray-300 bg-white text-gray-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366]" id="status-filter">
+      <option selected="" value="all">
+       Semua Status
+      </option>
+      <option value="Tepat Waktu">
+       Tepat Waktu
+      </option>
+      <option value="Terlambat">
+       Tidak Tepat Waktu
+      </option>
+      <option value="Invalid Semester">
+       Invalid Semester
+      </option>
+     </select>
+    </div>
+    <!-- Tabel Mahasiswa -->
+    <div class="overflow-x-auto max-h-96 border border-gray-200 rounded">
+     <table class="w-full border-collapse text-left text-gray-600 text-xs sm:text-sm" id="mahasiswa-table">
+      <thead>
+       <tr class="bg-gray-50 text-gray-400 uppercase font-semibold">
+        <th class="py-2 px-3 border-b border-gray-200">
+         Nama Mahasiswa
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         NIM
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         Semester
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         Total TAK
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         Jumlah CO
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         Status
+        </th>
+        <th class="py-2 px-3 border-b border-gray-200">
+         Confidence
+        </th>
+       </tr>
+      </thead>
+      <tbody>
+      </tbody>
+     </table>
+    </div>
+   </section>
+  </main>
+  <!-- Footer -->
+  <footer class="bg-[#1f2937] text-gray-300 text-xs sm:text-sm px-4 sm:px-6 lg:px-8 py-4">
+   <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+    <div class="flex items-center space-x-2">
+     <span class="font-semibold">
+      Sistem Prediksi Keterlambatan Studi
+     </span>
+    </div>
+    <div class="text-right text-[9px] sm:text-xs text-gray-400 max-w-xs">
+     <div>
+      © 2025 Dede Satriya - Politeknik Caltex Riau
+     </div>
+     <div>
+      Powered by
+      <span class="italic">
+       Machine Learning - Random Forest
+      </span>
+     </div>
+    </div>
+   </div>
+  </footer>
+  <!-- Modal for CSV Manual -->
+  <div aria-hidden="true" aria-modal="true" class="fixed inset-0 hidden z-50 flex items-center justify-center" id="manual-modal-backdrop" role="dialog">
+   <div class="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 sm:mx-0 p-6 text-gray-800 text-xs sm:text-sm relative">
+    <button aria-label="Tutup panduan" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#003366] rounded" id="close-manual-btn">
+     <i class="fas fa-times text-lg">
+     </i>
+    </button>
+    <h3 class="text-[#003366] font-semibold text-lg mb-4 flex items-center space-x-2">
+     <i class="fas fa-info-circle">
+     </i>
+     <span>
+      Panduan Format CSV Singkat
+     </span>
+    </h3>
+    <ul class="list-disc list-inside space-y-2">
+     <li>
+      <strong>
+       Header wajib:
+      </strong>
+      Nama Mahasiswa, NIM, Total TAK, Jumlah CO, IPK1–IPK6 (case sensitive)
+     </li>
+     <li>
+      <strong>
+       Nilai numerik:
+      </strong>
+      Bisa pakai titik atau koma, kosong dianggap 0
+     </li>
+     <li>
+      <strong>
+       IPK:
+      </strong>
+      Isi sesuai semester terakhir, minimal IPK1–IPK3, maksimal IPK1–IPK6
+     </li>
+     <li>
+      <strong>
+       Status "Invalid Semester":
+      </strong>
+      Jika IPK kurang dari 3 semester atau lebih dari 6
+     </li>
+     <li>
+      <strong>
+       Format file:
+      </strong>
+      CSV (Comma Separated Values), bukan Excel (.xlsx)
+     </li>
+    </ul>
+    <table class="mt-4 border-collapse border border-gray-300 text-xs">
+     <thead class="bg-gray-100">
+      <tr>
+       <th class="border p-1">
+        Nama Mahasiswa
+       </th>
+       <th class="border p-1">
+        NIM
+       </th>
+       <th class="border p-1">
+        Total TAK
+       </th>
+       <th class="border p-1">
+        Jumlah CO
+       </th>
+       <th class="border p-1">
+        IPK1
+       </th>
+       <th class="border p-1">
+        IPK2
+       </th>
+       <th class="border p-1">
+        IPK3
+       </th>
+       <th class="border p-1">
+        IPK4
+       </th>
+       <th class="border p-1">
+        IPK5
+       </th>
+       <th class="border p-1">
+        IPK6
+       </th>
+      </tr>
+     </thead>
+     <tbody>
+      <tr>
+       <td class="border p-1">
+        Andi Setiawan
+       </td>
+       <td class="border p-1">
+        20190201001
+       </td>
+       <td class="border p-1">
+        120
+       </td>
+       <td class="border p-1">
+        3
+       </td>
+       <td class="border p-1">
+        3.12
+       </td>
+       <td class="border p-1">
+        3.45
+       </td>
+       <td class="border p-1">
+        3.60
+       </td>
+       <td class="border p-1">
+        3.75
+       </td>
+       <td class="border p-1">
+       </td>
+       <td class="border p-1">
+       </td>
+      </tr>
+      <tr>
+       <td class="border p-1">
+        Budi Hartono
+       </td>
+       <td class="border p-1">
+        20190201002
+       </td>
+       <td class="border p-1">
+        90
+       </td>
+       <td class="border p-1">
+        2
+       </td>
+       <td class="border p-1">
+        2
+       </td>
+       <td class="border p-1">
+        2.5
+       </td>
+       <td class="border p-1">
+        3.1
+       </td>
+       <td class="border p-1">
+       </td>
+       <td class="border p-1">
+       </td>
+       <td class="border p-1">
+       </td>
+      </tr>
+      <tr>
+       <td class="border p-1">
+        Citra Dewi
+       </td>
+       <td class="border p-1">
+        20190201003
+       </td>
+       <td class="border p-1">
+        150
+       </td>
+       <td class="border p-1">
+        4
+       </td>
+       <td class="border p-1">
+        3
+       </td>
+       <td class="border p-1">
+        3.4
+       </td>
+       <td class="border p-1">
+        3
+       </td>
+       <td class="border p-1">
+        3.5
+       </td>
+       <td class="border p-1">
+        3.6
+       </td>
+       <td class="border p-1">
+        3.7
+       </td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+  </div>
+  <script>
+   // Toast system
+   const toastContainer = document.getElementById('toast-container');
+   function showToast(message, type = 'success', duration = 4000) {
+     const toast = document.createElement('div');
+     toast.className = `toast toast-${type}`;
+     toast.setAttribute('role', 'alert');
+     toast.setAttribute('tabindex', '0');
+     toast.innerHTML = `
+       <span>${message}</span>
+       <button aria-label="Close notification" class="ml-auto text-white font-bold focus:outline-none">&times;</button>
+     `;
+     toast.querySelector('button').addEventListener('click', () => {
+       toast.remove();
+     });
+     toastContainer.appendChild(toast);
+     setTimeout(() => {
+       toast.remove();
+     }, duration);
+     toast.focus();
+   }
+
+   // === Tabs Toggle ===
+   const tabInputManual = document.getElementById('tab-input-manual');
+   const tabUploadCSV = document.getElementById('tab-upload-csv');
+   const tabDashboard = document.getElementById('tab-dashboard');
+   const sectionInputManual = document.getElementById('input-manual-section');
+   const sectionUploadCSV = document.getElementById('upload-csv-section');
+   const sectionDashboard = document.getElementById('dashboard-section');
+
+   function showSection(section) {
+     sectionInputManual.classList.add('hidden');
+     sectionUploadCSV.classList.add('hidden');
+     sectionDashboard.classList.add('hidden');
+     tabInputManual.classList.remove('border-[#003366]', 'text-[#003366]');
+     tabInputManual.removeAttribute('aria-current');
+     tabUploadCSV.classList.remove('border-[#003366]', 'text-[#003366]');
+     tabUploadCSV.removeAttribute('aria-current');
+     tabDashboard.classList.remove('border-[#003366]', 'text-[#003366]');
+     tabDashboard.removeAttribute('aria-current');
+
+     section.classList.remove('hidden');
+     if(section === sectionInputManual) {
+       tabInputManual.classList.add('border-[#003366]', 'text-[#003366]');
+       tabInputManual.setAttribute('aria-current', 'page');
+     } else if(section === sectionUploadCSV) {
+       tabUploadCSV.classList.add('border-[#003366]', 'text-[#003366]');
+       tabUploadCSV.setAttribute('aria-current', 'page');
+     } else if(section === sectionDashboard) {
+       tabDashboard.classList.add('border-[#003366]', 'text-[#003366]');
+       tabDashboard.setAttribute('aria-current', 'page');
+     }
+   }
+
+   tabInputManual.addEventListener('click', () => showSection(sectionInputManual));
+   tabUploadCSV.addEventListener('click', () => showSection(sectionUploadCSV));
+   tabDashboard.addEventListener('click', () => showSection(sectionDashboard));
+
+   // === Tampilkan Input IPK Berdasarkan Semester ===
+   function updateIPKVisibility() {
+     const semesterSelect = document.getElementById('semester-awal');
+     const selectedValue = parseInt(semesterSelect.value);
+     const ipkDivs = document.querySelectorAll('[data-ipk-semester]');
+
+     ipkDivs.forEach(div => {
+       const sem = parseInt(div.getAttribute('data-ipk-semester'));
+       const input = div.querySelector('input');
+       if (sem <= selectedValue) {
+         div.style.display = 'block';
+         if (input) input.required = true;
+       } else {
+         div.style.display = 'none';
+         if (input) {
+           input.value = '';
+           input.required = false;
+         }
+       }
+     });
+
+     updateMinMaxIPK();
+   }
+
+   const semesterSelect = document.getElementById('semester-awal');
+   if (semesterSelect) {
+     semesterSelect.addEventListener('change', updateIPKVisibility);
+     window.addEventListener('DOMContentLoaded', updateIPKVisibility);
+   }
+
+   // === Hitung Otomatis Min & Max IPK ===
+   function updateMinMaxIPK() {
+     const ipkValues = [];
+
+     document.querySelectorAll('[data-ipk-semester]').forEach(div => {
+       if (div.style.display !== 'none') {
+         const input = div.querySelector('input');
+         if (input && input.value.trim() !== '') {
+           const val = input.value.trim().replace(',', '.');
+           const num = parseFloat(val);
+           if (!isNaN(num)) ipkValues.push(num);
+         }
+       }
+     });
+
+     const minIPKInput = document.getElementById('min-ipk');
+     const maxIPKInput = document.getElementById('max-ipk');
+
+     if (ipkValues.length > 0) {
+       if (minIPKInput) minIPKInput.value = Math.min(...ipkValues).toFixed(2);
+       if (maxIPKInput) maxIPKInput.value = Math.max(...ipkValues).toFixed(2);
+     } else {
+       if (minIPKInput) minIPKInput.value = '';
+       if (maxIPKInput) maxIPKInput.value = '';
+     }
+   }
+
+   document.querySelectorAll('[data-ipk-semester] input').forEach(input => {
+     input.addEventListener('input', updateMinMaxIPK);
+   });
+
+   const resetBtn = document.getElementById('manual-reset-btn');
+   if (resetBtn) {
+     resetBtn.addEventListener('click', () => {
+       document.getElementById('manual-result-card').classList.add('hidden');
+       document.getElementById('manual-result-content').innerHTML = '';
+       updateIPKVisibility();
+     });
+   }
+
+   // === Manual Prediction Form ===
+   const manualForm = document.getElementById('manual-form');
+   const manualLoadingSpinner = document.getElementById('manual-loading-spinner');
+
+   if (manualForm) {
+     manualForm.addEventListener('submit', async (e) => {
+       e.preventDefault();
+
+       const formData = new FormData(manualForm);
+       const semesterRaw = formData.get('semester-awal');
+
+       if (!semesterRaw) {
+         showToast("Mohon pilih semester terlebih dahulu.", "warning");
+         return;
+       }
+
+       const semester = parseInt(semesterRaw);
+
+       const payload = {
+         semester: semester,
+         total_tak: parseFloat(formData.get('total-tak')),
+         jumlah_co: parseFloat(formData.get('jumlah-co')),
+         ipk1: parseFloat(formData.get('ipk-semester-1') || 0),
+         ipk2: parseFloat(formData.get('ipk-semester-2') || 0),
+         ipk3: parseFloat(formData.get('ipk-semester-3') || 0),
+         ipk4: parseFloat(formData.get('ipk-semester-4') || 0),
+         ipk5: parseFloat(formData.get('ipk-semester-5') || 0),
+         ipk6: parseFloat(formData.get('ipk-semester-6') || 0)
+       };
+
+       try {
+         manualLoadingSpinner.classList.remove('hidden');
+         manualForm.querySelector('button[type="submit"]').disabled = true;
+
+         const response = await fetch('/predict', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
+
+         const result = await response.json();
+
+         const nama = formData.get('nama-mahasiswa');
+         const nim = formData.get('nim');
+         const totalTak = formData.get('total-tak');
+         const jumlahCo = formData.get('jumlah-co');
+
+         const manualResultCard = document.getElementById('manual-result-card');
+         const manualResultContent = document.getElementById('manual-result-content');
+
+         if (result.status) {
+           manualResultContent.innerHTML = `
+             <p class="font-semibold text-gray-900 mb-0.5">${nama}</p>
+             <p class="text-gray-600 mb-2">NIM: ${nim}</p>
+             <div class="flex space-x-2 mb-2 text-xs">
+               <div class="bg-gray-200 rounded px-2 py-1 text-gray-700 font-semibold">
+                 Semester Prediksi<br/><span class="font-bold">Semester ${semester}</span>
+               </div>
+               <div class="bg-gray-200 rounded px-2 py-1 text-gray-700 font-semibold">
+                 Total TAK<br/><span class="font-bold">${totalTak}</span>
+               </div>
+               <div class="bg-gray-200 rounded px-2 py-1 text-gray-700 font-semibold">
+                 Jumlah CO<br/><span class="font-bold">${jumlahCo}</span>
+               </div>
+             </div>
+             <p class="font-semibold text-gray-900 mb-1">Hasil Prediksi:</p>
+             <p><span class="font-bold">Status:</span> 
+               <span class="${result.status === 'Terlambat' ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}">
+                 ${result.status}
+               </span>
+             </p>
+             <p class="text-xs text-gray-700 mt-1">Confidence Score: ${result.confidence}</p>
+           `;
+           showToast("Prediksi berhasil dimuat.", "success");
+         } else {
+           manualResultContent.innerHTML = `
+             <p class="text-red-600 font-semibold">Gagal memuat hasil prediksi.</p>
+           `;
+           showToast("Gagal memuat hasil prediksi.", "error");
+         }
+
+         manualResultCard.classList.remove('hidden');
+         manualResultCard.scrollIntoView({ behavior: 'smooth' });
+
+       } catch (error) {
+         console.error('Terjadi error:', error);
+         showToast('Gagal mengirim permintaan prediksi.', 'error');
+       } finally {
+         manualLoadingSpinner.classList.add('hidden');
+         manualForm.querySelector('button[type="submit"]').disabled = false;
+       }
+     });
+   }
+
+   // === CSV Upload Real Prediction + Download + Dashboard Data ===
+   const uploadBtn = document.getElementById('upload-btn');
+   const csvFileInput = document.getElementById('csv-file');
+   const batchResultsContainer = document.getElementById('batch-results-container');
+   const batchResultsTableBody = document.querySelector('#batch-results-table tbody');
+
+   let lastBatchData = null; // Store last batch data for dashboard
+
+   uploadBtn.addEventListener('click', async () => {
+     const file = csvFileInput.files[0];
+     if (!file) {
+       showToast('Silakan pilih file CSV terlebih dahulu.', 'warning');
+       return;
+     }
+
+     const formData = new FormData();
+     formData.append('file', file);
+
+     try {
+       uploadBtn.disabled = true;
+       uploadBtn.querySelector('i').classList.add('fa-spin');
+       const response = await fetch('/predict_csv', {
+         method: 'POST',
+         body: formData
+       });
+
+       const contentType = response.headers.get('Content-Type');
+
+       if (contentType && contentType.includes('application/json')) {
+         const result = await response.json();
+
+         batchResultsTableBody.innerHTML = '';
+
+         if (!result.status) {
+           showToast('Gagal memproses CSV: ' + (result.message || 'Unknown error.'), 'error');
+           uploadBtn.disabled = false;
+           uploadBtn.querySelector('i').classList.remove('fa-spin');
+           return;
+         }
+
+         result.results.forEach(row => {
+           const tr = document.createElement('tr');
+           tr.classList.add('border-b', 'border-gray-100');
+           tr.innerHTML = `
+             <td class="py-2 px-3">${row.nama || '-'}</td>
+             <td class="py-2 px-3">${row.nim || '-'}</td>
+             <td class="py-2 px-3">${row.semester || '-'}</td>
+             <td class="py-2 px-3">${row.tak || '-'}</td>
+             <td class="py-2 px-3">${row.co || '-'}</td>
+             <td class="py-2 px-3 font-semibold ${row.status === 'Terlambat' ? 'text-red-600' : (row.status === 'Tepat Waktu' ? 'text-green-600' : 'text-yellow-600')}">${row.status}</td>
+             <td class="py-2 px-3">${row.confidence}</td>
+           `;
+           batchResultsTableBody.appendChild(tr);
+         });
+
+         batchResultsContainer.style.display = 'block';
+
+         // Save data for dashboard
+         lastBatchData = result.results;
+
+         // Automatically switch to Dashboard tab after upload
+         showSection(sectionDashboard);
+         renderDashboardCharts(lastBatchData);
+
+         showToast('Upload dan prediksi CSV berhasil.', 'success');
+
+       } else {
+         // Fallback: direct CSV download
+         const blob = await response.blob();
+         const url = window.URL.createObjectURL(blob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = 'hasil_prediksi_batch.csv';
+         document.body.appendChild(a);
+         a.click();
+         a.remove();
+         window.URL.revokeObjectURL(url);
+       }
+     } catch (error) {
+       console.error('Gagal:', error);
+       showToast('Terjadi kesalahan saat upload atau unduh hasil CSV.', 'error');
+     } finally {
+       uploadBtn.disabled = false;
+       uploadBtn.querySelector('i').classList.remove('fa-spin');
+     }
+   });
+
+   // === Tombol Download CSV Manual ===
+   const downloadCsvBtn = document.getElementById('download-csv-btn');
+   if (downloadCsvBtn) {
+     downloadCsvBtn.addEventListener('click', async () => {
+       const file = csvFileInput.files[0];
+       if (!file) {
+         showToast("Silakan pilih file CSV terlebih dahulu.", "warning");
+         return;
+       }
+
+       const formData = new FormData();
+       formData.append('file', file);
+
+       try {
+         const response = await fetch('/predict_csv?download=true', {
+           method: 'POST',
+           body: formData
+         });
+
+         const blob = await response.blob();
+         const url = window.URL.createObjectURL(blob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = 'hasil_prediksi_batch.csv';
+         document.body.appendChild(a);
+         a.click();
+         a.remove();
+         window.URL.revokeObjectURL(url);
+       } catch (err) {
+         console.error('Gagal mengunduh CSV:', err);
+         showToast('Terjadi kesalahan saat mengunduh CSV.', 'error');
+       }
+     });
+   }
+
+   // === Dashboard Charts and Summary ===
+   let statusDonutChart = null;
+   let takCategoryChart = null;
+   let coComparisonChart = null;
+   let ipkDistributionChart = null;
+
+   // Helper to parse float safely
+   function toFloat(val) {
+     if (val === null || val === undefined) return NaN;
+     if (typeof val === "string") {
+       return parseFloat(val.replace(",", ".").trim());
+     }
+     return parseFloat(val);
+   }
+
+   // Render dashboard charts with filtering by semester and status filter for table
+   function renderDashboardCharts(data, filterSemester = 'all') {
+     if (!data || !Array.isArray(data) || data.length === 0) {
+       clearDashboardCharts();
+       clearSummary();
+       clearMahasiswaTable();
+       return;
+     }
+
+     // Normalize data
+     const normalizedData = data.map(d => {
+       let status = d.status;
+       if (status !== 'Terlambat' && status !== 'Tepat Waktu' && status !== 'Invalid Semester') {
+         status = 'Invalid Semester';
+       }
+       return {
+         ...d,
+         normalizedStatus: status,
+         semester: Number(d.semester),
+         tak: Number(d.tak),
+         co: Number(d.co),
+         confidence: parseFloat(d.confidence),
+         ipk1: toFloat(d.ipk1),
+         ipk2: toFloat(d.ipk2),
+         ipk3: toFloat(d.ipk3),
+         ipk4: toFloat(d.ipk4),
+         ipk5: toFloat(d.ipk5),
+         ipk6: toFloat(d.ipk6)
+       };
+     });
+
+     // Filter by semester if needed
+     let filteredData = normalizedData;
+     if (filterSemester !== 'all') {
+       const semNum = Number(filterSemester);
+       filteredData = normalizedData.filter(d => d.semester === semNum);
+     }
+
+     // Summary counts
+     const totalMahasiswa = filteredData.length;
+     const tepatWaktuCount = filteredData.filter(d => d.normalizedStatus === 'Tepat Waktu').length;
+     const terlambatCount = filteredData.filter(d => d.normalizedStatus === 'Terlambat').length;
+     const invalidSemesterCount = filteredData.filter(d => d.normalizedStatus === 'Invalid Semester').length;
+
+     // Average confidence (only valid numeric)
+     const confidenceValues = filteredData.map(d => d.confidence).filter(c => !isNaN(c));
+     const avgConfidence = confidenceValues.length > 0 ? (confidenceValues.reduce((a,b) => a+b, 0) / confidenceValues.length) : 0;
+
+     // Update summary cards
+     document.getElementById('summary-total').textContent = totalMahasiswa;
+     document.getElementById('summary-tepat-waktu').textContent = tepatWaktuCount;
+     document.getElementById('summary-terlambat').textContent = terlambatCount;
+     document.getElementById('summary-invalid-semester').textContent = invalidSemesterCount;
+     document.getElementById('summary-avg-confidence').textContent = avgConfidence.toFixed(2) + '%';
+
+     // Prepare data for Status Donut Chart
+     const statusLabels = ['Tepat Waktu', 'Terlambat', 'Invalid Semester'];
+     const statusCounts = {
+       'Tepat Waktu': tepatWaktuCount,
+       'Terlambat': terlambatCount,
+       'Invalid Semester': invalidSemesterCount
+     };
+     const statusColors = {
+       'Tepat Waktu': '#16a34a', // green
+       'Terlambat': '#dc2626', // red
+       'Invalid Semester': '#ca8a04' // yellow
+     };
+
+     // Destroy previous charts if exist
+     if (statusDonutChart) statusDonutChart.destroy();
+     if (takCategoryChart) takCategoryChart.destroy();
+     if (coComparisonChart) coComparisonChart.destroy();
+     if (ipkDistributionChart) ipkDistributionChart.destroy();
+
+     // Status Donut Chart
+     const statusDonutCtx = document.getElementById('statusDonutChart').getContext('2d');
+     statusDonutChart = new Chart(statusDonutCtx, {
+       type: 'doughnut',
+       data: {
+         labels: statusLabels,
+         datasets: [{
+           data: statusLabels.map(l => statusCounts[l]),
+           backgroundColor: statusLabels.map(l => statusColors[l]),
+           borderColor: '#fff',
+           borderWidth: 2
+         }]
+       },
+       options: {
+         responsive: true,
+         cutout: '60%',
+         plugins: {
+           legend: { position: 'bottom' },
+           tooltip: { enabled: true }
+         }
+       }
+     });
+
+     // 1. Grafik TAK kategori "TAK < 75" dan "TAK ≥ 75"
+     const takCategories = ['TAK < 75', 'TAK ≥ 75'];
+     const takCategoryCounts = { 'TAK < 75': 0, 'TAK ≥ 75': 0 };
+     filteredData.forEach(d => {
+       if (isNaN(d.tak)) return;
+       if (d.tak < 75) takCategoryCounts['TAK < 75']++;
+       else takCategoryCounts['TAK ≥ 75']++;
+     });
+     const takCategoryColors = ['#dc2626', '#16a34a']; // red for <75, green for ≥75
+
+     const takCategoryCtx = document.getElementById('takCategoryChart').getContext('2d');
+     takCategoryChart = new Chart(takCategoryCtx, {
+       type: 'bar',
+       data: {
+         labels: takCategories,
+         datasets: [{
+           label: 'Jumlah Mahasiswa',
+           data: takCategories.map(cat => takCategoryCounts[cat]),
+           backgroundColor: takCategoryColors
+         }]
+       },
+       options: {
+         responsive: true,
+         scales: {
+           y: { beginAtZero: true, ticks: { stepSize: 1 } }
+         },
+         plugins: {
+           legend: { display: false },
+           tooltip: { enabled: true }
+         }
+       }
+     });
+
+     // 2. Grafik perbandingan distribusi Jumlah CO antara mahasiswa Tepat Waktu vs Terlambat dengan bins 1,2,3,4,5,>5
+     const bins = [1,2,3,4,5]; // bins 1,2,3,4,5 and >5
+     function binCO(value) {
+       if (value <= 0) return null; // ignore zero or negative
+       if (value > 5) return '>5';
+       return value.toString();
+     }
+
+     // Initialize counts for Tepat Waktu and Terlambat
+     const coBinsLabels = ['1', '2', '3', '4', '5', '>5'];
+     const coCountsTepatWaktu = { '1':0, '2':0, '3':0, '4':0, '5':0, '>5':0 };
+     const coCountsTerlambat = { '1':0, '2':0, '3':0, '4':0, '5':0, '>5':0 };
+
+     filteredData.forEach(d => {
+       if (isNaN(d.co)) return;
+       const bin = binCO(d.co);
+       if (!bin) return;
+       if (d.normalizedStatus === 'Tepat Waktu') {
+         coCountsTepatWaktu[bin]++;
+       } else if (d.normalizedStatus === 'Terlambat') {
+         coCountsTerlambat[bin]++;
+       }
+     });
+
+     const coComparisonCtx = document.getElementById('coComparisonChart').getContext('2d');
+     coComparisonChart = new Chart(coComparisonCtx, {
+       type: 'bar',
+       data: {
+         labels: coBinsLabels,
+         datasets: [
+           {
+             label: 'Tepat Waktu',
+             data: coBinsLabels.map(bin => coCountsTepatWaktu[bin]),
+             backgroundColor: '#16a34a'
+           },
+           {
+             label: 'Terlambat',
+             data: coBinsLabels.map(bin => coCountsTerlambat[bin]),
+             backgroundColor: '#dc2626'
+           }
+         ]
+       },
+       options: {
+         responsive: true,
+         scales: {
+           y: { beginAtZero: true, ticks: { stepSize: 1 } }
+         },
+         plugins: {
+           legend: { position: 'top' },
+           tooltip: { enabled: true }
+         }
+       }
+     });
+
+     // 3. Grafik distribusi IPK terakhir antara mahasiswa Tepat Waktu vs Terlambat
+     // Ambil IPK terakhir per mahasiswa (semester tertinggi dengan IPK valid)
+     function getLastIPK(d) {
+       for (let sem = 6; sem >= 1; sem--) {
+         const ipkVal = d[`ipk${sem}`];
+         if (!isNaN(ipkVal) && ipkVal > 0) return ipkVal;
+       }
+       return NaN;
+     }
+
+     const ipkTepatWaktu = filteredData.filter(d => d.normalizedStatus === 'Tepat Waktu').map(getLastIPK).filter(v => !isNaN(v));
+     const ipkTerlambat = filteredData.filter(d => d.normalizedStatus === 'Terlambat').map(getLastIPK).filter(v => !isNaN(v));
+
+     // Buat bins untuk histogram IPK (0.0 - 4.0, step 0.5)
+     const ipkBins = [2,2.5,3,3.5,4];
+     function createHistogram(data) {
+       const counts = new Array(ipkBins.length - 1).fill(0);
+       data.forEach(val => {
+         for (let i = 0; i < ipkBins.length - 1; i++) {
+           if (val >= ipkBins[i] && val < ipkBins[i+1]) {
+             counts[i]++;
+             break;
+           }
+           if (val === 4 && i === ipkBins.length - 2) {
+             counts[i]++;
+           }
+         }
+       });
+       return counts;
+     }
+     const histTepatWaktu = createHistogram(ipkTepatWaktu);
+     const histTerlambat = createHistogram(ipkTerlambat);
+
+     const ipkDistributionCtx = document.getElementById('ipkDistributionChart').getContext('2d');
+     ipkDistributionChart = new Chart(ipkDistributionCtx, {
+       type: 'bar',
+       data: {
+         labels: ipkBins.slice(0, -1).map((v,i) => `${ipkBins[i].toFixed(1)} - ${ipkBins[i+1].toFixed(1)}`),
+         datasets: [
+           {
+             label: 'Tepat Waktu',
+             data: histTepatWaktu,
+             backgroundColor: '#16a34a'
+           },
+           {
+             label: 'Terlambat',
+             data: histTerlambat,
+             backgroundColor: '#dc2626'
+           }
+         ]
+       },
+       options: {
+         responsive: true,
+         scales: {
+           y: { beginAtZero: true, ticks: { stepSize: 1 } }
+         },
+         plugins: {
+           legend: { position: 'top' },
+           tooltip: { enabled: true }
+         }
+       }
+     });
+
+     // Render mahasiswa table filtered by current status filter
+     renderMahasiswaTable(normalizedData);
+   }
+
+   // Render mahasiswa table with optional status filter
+   function renderMahasiswaTable(data, statusFilter = 'all') {
+     const tbody = document.querySelector('#mahasiswa-table tbody');
+     tbody.innerHTML = '';
+     let filtered = data;
+     if (statusFilter !== 'all') {
+       filtered = data.filter(d => d.normalizedStatus === statusFilter);
+     }
+     if (filtered.length === 0) {
+       const tr = document.createElement('tr');
+       tr.innerHTML = `<td colspan="7" class="py-4 px-3 text-center text-gray-500">Tidak ada data mahasiswa.</td>`;
+       tbody.appendChild(tr);
+       return;
+     }
+     filtered.forEach(d => {
+       const tr = document.createElement('tr');
+       tr.classList.add('border-b', 'border-gray-100');
+       tr.innerHTML = `
+         <td class="py-2 px-3">${d.nama || '-'}</td>
+         <td class="py-2 px-3">${d.nim || '-'}</td>
+         <td class="py-2 px-3">${d.semester || '-'}</td>
+         <td class="py-2 px-3">${d.tak || '-'}</td>
+         <td class="py-2 px-3">${d.co || '-'}</td>
+         <td class="py-2 px-3 font-semibold ${d.normalizedStatus === 'Terlambat' ? 'text-red-600' : (d.normalizedStatus === 'Tepat Waktu' ? 'text-green-600' : 'text-yellow-600')}">${d.normalizedStatus}</td>
+         <td class="py-2 px-3">${isNaN(d.confidence) ? '-' : d.confidence.toFixed(2) + '%'}</td>
+       `;
+       tbody.appendChild(tr);
+     });
+   }
+
+   function clearDashboardCharts() {
+     if (statusDonutChart) {
+       statusDonutChart.destroy();
+       statusDonutChart = null;
+     }
+     if (takCategoryChart) {
+       takCategoryChart.destroy();
+       takCategoryChart = null;
+     }
+     if (coComparisonChart) {
+       coComparisonChart.destroy();
+       coComparisonChart = null;
+     }
+     if (ipkDistributionChart) {
+       ipkDistributionChart.destroy();
+       ipkDistributionChart = null;
+     }
+   }
+
+   function clearSummary() {
+     document.getElementById('summary-total').textContent = '0';
+     document.getElementById('summary-tepat-waktu').textContent = '0';
+     document.getElementById('summary-terlambat').textContent = '0';
+     document.getElementById('summary-invalid-semester').textContent = '0';
+     document.getElementById('summary-avg-confidence').textContent = '0.00%';
+   }
+
+   function clearMahasiswaTable() {
+     const tbody = document.querySelector('#mahasiswa-table tbody');
+     tbody.innerHTML = `<tr><td colspan="7" class="py-4 px-3 text-center text-gray-500">Tidak ada data mahasiswa.</td></tr>`;
+   }
+
+   // On page load, show Input Manual tab by default
+   window.addEventListener('DOMContentLoaded', () => {
+     showSection(sectionInputManual);
+     clearMahasiswaTable();
+   });
+
+   // Semester filter change event
+   const dashboardSemesterFilter = document.getElementById('dashboard-semester-filter');
+   dashboardSemesterFilter.addEventListener('change', () => {
+     if (!lastBatchData) {
+       clearDashboardCharts();
+       clearSummary();
+       clearMahasiswaTable();
+       return;
+     }
+     renderDashboardCharts(lastBatchData, dashboardSemesterFilter.value);
+   });
+
+   // Status filter change event for mahasiswa table
+   const statusFilterSelect = document.getElementById('status-filter');
+   statusFilterSelect.addEventListener('change', () => {
+     if (!lastBatchData) {
+       clearMahasiswaTable();
+       return;
+     }
+     // Normalize data for table rendering
+     const normalizedData = lastBatchData.map(d => {
+       let status = d.status;
+       if (status !== 'Terlambat' && status !== 'Tepat Waktu' && status !== 'Invalid Semester') {
+         status = 'Invalid Semester';
+       }
+       return {...d, normalizedStatus: status};
+     });
+     renderMahasiswaTable(normalizedData, statusFilterSelect.value);
+   });
+
+   // Modal open/close for CSV manual guide
+   const openManualBtns = document.querySelectorAll('#open-manual-btn');
+   const closeManualBtn = document.getElementById('close-manual-btn');
+   const manualModalBackdrop = document.getElementById('manual-modal-backdrop');
+
+   function openModal() {
+     manualModalBackdrop.classList.remove('hidden');
+     manualModalBackdrop.setAttribute('aria-hidden', 'false');
+     closeManualBtn.focus();
+   }
+   function closeModal() {
+     manualModalBackdrop.classList.add('hidden');
+     manualModalBackdrop.setAttribute('aria-hidden', 'true');
+     // Return focus to first open manual button
+     if (openManualBtns.length > 0) openManualBtns[0].focus();
+   }
+
+   openManualBtns.forEach(btn => btn.addEventListener('click', openModal));
+   closeManualBtn.addEventListener('click', closeModal);
+   manualModalBackdrop.addEventListener('click', (e) => {
+     if (e.target === manualModalBackdrop) closeModal();
+   });
+   document.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape' && !manualModalBackdrop.classList.contains('hidden')) {
+       closeModal();
+     }
+   });
+
+   // CSV template content as string
+const csvTemplate = `Nama Mahasiswa,NIM,Total TAK,Jumlah CO,IPK1,IPK2,IPK3,IPK4,IPK5,IPK6
+Mahasiswa 1,201920326030,120,0,3.33,3.37,3.24,3.32,3.37,3.36
+Mahasiswa 2,201920326031,68,3,2.7,2.68,2.6,,,
+Mahasiswa 3,201920326032,13,0,0.0,0.0,,,,`;
+
+   // Download template CSV
+   const downloadTemplateBtns = document.querySelectorAll('#download-template-btn');
+   downloadTemplateBtns.forEach(btn => {
+     btn.addEventListener('click', () => {
+       const blob = new Blob([csvTemplate], { type: 'text/csv;charset=utf-8;' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = 'template_prediksi_keterlambatan_studi.csv';
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+     });
+   });
+  </script>
+ </body>
+</html>
