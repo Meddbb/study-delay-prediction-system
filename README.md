@@ -4,7 +4,7 @@ A web platform for predicting student study delay risks using Random Forest mach
 
 ## Description
 
-This system helps identify students who are potentially at risk of study delays based on academic data such as Total TAK (Total Credit Points), Number of CO (Cut Off), and GPA per semester. This application is built for private higher education institutions in Indonesia.
+This system helps identify students who are potentially at risk of study delays based on academic data such as Total TAK (Student Activity Transcript), Number of CO (Carry Over), and GPA per semester. This application is built for private higher education institutions in Indonesia.
 
 ## Main Features
 
@@ -79,7 +79,7 @@ Platform web untuk memprediksi risiko keterlambatan studi mahasiswa menggunakan 
 
 ## Deskripsi
 
-Sistem ini membantu mengidentifikasi mahasiswa yang berpotensi mengalami keterlambatan studi berdasarkan data akademik seperti Total TAK (Total Angka Kredit), Jumlah CO (Cut Off), dan IPK per semester. Aplikasi ini dibangun untuk institusi pendidikan tinggi swasta di Indonesia.
+Sistem ini membantu mengidentifikasi mahasiswa yang berpotensi mengalami keterlambatan studi berdasarkan data akademik seperti Total TAK (Transkrip Aktivitas Kemahasiswaan), Jumlah CO (Carry Over), dan IPK per semester. Aplikasi ini dibangun untuk institusi pendidikan tinggi swasta di Indonesia.
 
 ## Fitur Utama
 
